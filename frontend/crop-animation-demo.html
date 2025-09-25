@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather-to-Crop Growth Animation Demo - ClimateSync</title>
+  <link rel="stylesheet" href="crop-growth-animations.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+    
+    .demo-header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+    
+    .demo-title {
+      font-size: 2.5em;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .demo-subtitle {
+      font-size: 1.2em;
+      opacity: 0.9;
+      font-weight: 300;
+    }
+    
+    .animation-demo-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    }
+    
+    .weather-impact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+    }
+    
+    .impact-card {
+      background: linear-gradient(145deg, #f0f2f5, #e1e5ea);
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    
+    .impact-title {
+      font-size: 1.3em;
+      font-weight: 600;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .impact-description {
+      color: #666;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+    
+    .impact-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .impact-btn {
+      background: linear-gradient(45deg, #4CAF50, #45a049);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .impact-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    }
+    
+    .impact-btn.pressure {
+      background: linear-gradient(45deg, #FF5722, #F44336);
+      box-shadow: 0 4px 15px rgba(255, 87, 34, 0.3);
+    }
+    
+    .impact-btn.pressure:hover {
+      box-shadow: 0 6px 20px rgba(255, 87, 34, 0.4);
+    }
+    
+    .impact-btn.wind {
+      background: linear-gradient(45deg, #2196F3, #1976D2);
+      box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+    }
+    
+    .impact-btn.wind:hover {
+      box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+    }
+    
+    .impact-btn.air-quality {
+      background: linear-gradient(45deg, #9C27B0, #673AB7);
+      box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+    }
+    
+    .impact-btn.air-quality:hover {
+      box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+    }
+    
+    .impact-btn.soil {
+      background: linear-gradient(45deg, #607D8B, #455A64);
+      box-shadow: 0 4px 15px rgba(96, 125, 139, 0.3);
+    }
+    
+    .impact-btn.soil:hover {
+      box-shadow: 0 6px 20px rgba(96, 125, 139, 0.4);
+    }
+    
+    .impact-btn.heat {
+      background: linear-gradient(45deg, #FF9800, #F57C00);
+      box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+    }
+    
+    .impact-btn.heat:hover {
+      box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+    }
+    
+    .weather-simulation-panel {
+      background: linear-gradient(145deg, #fff, #f8f9fa);
+      border-radius: 15px;
+      padding: 25px;
+      margin-top: 30px;
+      border: 2px solid #e0e0e0;
+    }
+    
+    .simulation-title {
+      font-size: 1.4em;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2E7D32;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .weather-sliders {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .slider-label {
+      font-weight: 500;
+      color: #555;
+      display: flex;
+      justify-content: between;
+      align-items: center;
+    }
+    
+    .slider-value {
+      background: #e3f2fd;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-weight: 600;
+      color: #1976d2;
+      font-size: 0.9em;
+    }
+    
+    .weather-slider {
+      appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #ddd;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    
+    .weather-slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #4CAF50, #45a049);
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .weather-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(45deg, #4CAF50, #45a049);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .growth-metrics {
+      background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .metrics-title {
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: #2E7D32;
+    }
+    
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    
+    .metric-item {
+      text-align: center;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .metric-value {
+      font-size: 1.8em;
+      font-weight: 700;
+      color: #4CAF50;
+      margin-bottom: 5px;
+    }
+    
+    .metric-label {
+      font-size: 0.9em;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .navigation-bar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+    }
+    
+    .nav-btn {
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .nav-btn:hover {
+      background: white;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    
+    @media (max-width: 768px) {
+      .weather-impact-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .weather-sliders {
+        grid-template-columns: 1fr;
+      }
+      
+      .demo-title {
+        font-size: 2em;
+      }
+      
+      .animation-demo-container {
+        padding: 20px;
+        margin: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <div class="navigation-bar">
+    <a href="farming.html" class="nav-btn">
+      <i class="fas fa-arrow-left"></i>
+      Back to Farming Dashboard
+    </a>
+  </div>
+
+  <!-- Header -->
+  <div class="demo-header">
+    <h1 class="demo-title">🌱 Weather-to-Crop Impact Animations</h1>
+    <p class="demo-subtitle">Interactive visualization of how weather parameters affect crop growth in real-time</p>
+  </div>
+
+  <!-- Main Demo Container -->
+  <div class="animation-demo-container">
+    <!-- Main Animation Container -->
+    <div id="cropGrowthAnimation"></div>
+    
+    <!-- Weather Impact Information Grid -->
+    <div class="weather-impact-grid">
+      <!-- Atmospheric Pressure Impact -->
+      <div class="impact-card">
+        <h3 class="impact-title">
+          <i class="fas fa-tachometer-alt" style="color: #FF5722;"></i>
+          Atmospheric Pressure Impact
+        </h3>
+        <p class="impact-description">
+          Atmospheric pressure affects plant cell expansion, water uptake, and gas exchange. 
+          High pressure can restrict growth, while low pressure may enhance transpiration rates.
+        </p>
+        <div class="impact-controls">
+          <button class="impact-btn pressure" onclick="simulateAtmosphericPressure('low')">Low Pressure (<1000 hPa)</button>
+          <button class="impact-btn pressure" onclick="simulateAtmosphericPressure('normal')">Normal (1013 hPa)</button>
+          <button class="impact-btn pressure" onclick="simulateAtmosphericPressure('high')">High Pressure (>1030 hPa)</button>
+        </div>
+      </div>
+      
+      <!-- Wind Conditions Impact -->
+      <div class="impact-card">
+        <h3 class="impact-title">
+          <i class="fas fa-wind" style="color: #2196F3;"></i>
+          Wind Conditions Impact
+        </h3>
+        <p class="impact-description">
+          Wind affects transpiration rates, pollination success, mechanical stress, and disease spread. 
+          Optimal wind promotes gas exchange while excessive wind causes physical damage.
+        </p>
+        <div class="impact-controls">
+          <button class="impact-btn wind" onclick="simulateWindConditions('calm')">Calm (<5 km/h)</button>
+          <button class="impact-btn wind" onclick="simulateWindConditions('moderate')">Moderate (10-15 km/h)</button>
+          <button class="impact-btn wind" onclick="simulateWindConditions('strong')">Strong (>25 km/h)</button>
+        </div>
+      </div>
+      
+      <!-- Air Quality Impact -->
+      <div class="impact-card">
+        <h3 class="impact-title">
+          <i class="fas fa-smog" style="color: #9C27B0;"></i>
+          Air Quality Impact
+        </h3>
+        <p class="impact-description">
+          Air quality affects photosynthesis efficiency, leaf health, and overall plant vigor. 
+          Poor air quality reduces light penetration and damages leaf surfaces.
+        </p>
+        <div class="impact-controls">
+          <button class="impact-btn air-quality" onclick="simulateAirQuality('good')">Good (AQI <50)</button>
+          <button class="impact-btn air-quality" onclick="simulateAirQuality('moderate')">Moderate (AQI 50-100)</button>
+          <button class="impact-btn air-quality" onclick="simulateAirQuality('poor')">Poor (AQI >150)</button>
+        </div>
+      </div>
+      
+      <!-- Soil Conditions Impact -->
+      <div class="impact-card">
+        <h3 class="impact-title">
+          <i class="fas fa-seedling" style="color: #607D8B;"></i>
+          Soil Conditions Impact
+        </h3>
+        <p class="impact-description">
+          Soil moisture and temperature directly affect root development, nutrient uptake, and microbial activity. 
+          Optimal soil conditions are crucial for healthy plant establishment.
+        </p>
+        <div class="impact-controls">
+          <button class="impact-btn soil" onclick="simulateSoilCondition('dry')">Dry Soil (<30%)</button>
+          <button class="impact-btn soil" onclick="simulateSoilCondition('optimal')">Optimal (50-70%)</button>
+          <button class="impact-btn soil" onclick="simulateSoilCondition('waterlogged')">Waterlogged (>80%)</button>
+        </div>
+      </div>
+      
+      <!-- Heat Index Impact -->
+      <div class="impact-card">
+        <h3 class="impact-title">
+          <i class="fas fa-thermometer-full" style="color: #FF9800;"></i>
+          Heat Index Impact
+        </h3>
+        <p class="impact-description">
+          Heat index combines temperature and humidity to measure plant stress. 
+          High heat index causes wilting, reduced photosynthesis, and cellular damage.
+        </p>
+        <div class="impact-controls">
+          <button class="impact-btn heat" onclick="simulateHeatIndex('low')">Low (<27°C)</button>
+          <button class="impact-btn heat" onclick="simulateHeatIndex('moderate')">Moderate (27-32°C)</button>
+          <button class="impact-btn heat" onclick="simulateHeatIndex('extreme')">Extreme (>40°C)</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Interactive Weather Simulation Panel -->
+    <div class="weather-simulation-panel">
+      <h3 class="simulation-title">
+        <i class="fas fa-sliders-h"></i>
+        Interactive Weather Simulation
+      </h3>
+      
+      <div class="weather-sliders">
+        <div class="slider-group">
+          <div class="slider-label">
+            Temperature
+            <span class="slider-value" id="tempValue">25°C</span>
+          </div>
+          <input type="range" class="weather-slider" id="tempSlider" 
+                 min="0" max="45" value="25" step="0.5">
+        </div>
+        
+        <div class="slider-group">
+          <div class="slider-label">
+            Humidity
+            <span class="slider-value" id="humidityValue">60%</span>
+          </div>
+          <input type="range" class="weather-slider" id="humiditySlider" 
+                 min="10" max="100" value="60" step="1">
+        </div>
+        
+        <div class="slider-group">
+          <div class="slider-label">
+            Rainfall
+            <span class="slider-value" id="rainfallValue">2mm</span>
+          </div>
+          <input type="range" class="weather-slider" id="rainfallSlider" 
+                 min="0" max="15" value="2" step="0.1">
+        </div>
+        
+        <div class="slider-group">
+          <div class="slider-label">
+            Wind Speed
+            <span class="slider-value" id="windValue">5 km/h</span>
+          </div>
+          <input type="range" class="weather-slider" id="windSlider" 
+                 min="0" max="30" value="5" step="0.5">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Growth Metrics Display -->
+    <div class="growth-metrics">
+      <h4 class="metrics-title">Current Growth Metrics</h4>
+      <div class="metrics-grid">
+        <div class="metric-item">
+          <div class="metric-value" id="growthRateMetric">100%</div>
+          <div class="metric-label">Growth Rate</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value" id="healthScoreMetric">85%</div>
+          <div class="metric-label">Plant Health</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value" id="stressLevelMetric">Low</div>
+          <div class="metric-label">Stress Level</div>
+        </div>
+        <div class="metric-item">
+          <div class="metric-value" id="yieldPotentialMetric">92%</div>
+          <div class="metric-label">Yield Potential</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="crop-growth-animator.js"></script>
+  <script>
+    // Advanced atmospheric condition simulation functions
+    function simulateAtmosphericPressure(type) {
+      if (!cropAnimator) return;
+      
+      switch(type) {
+        case 'low':
+          cropAnimator.updateWeatherConditions({ 
+            pressure: 980,
+            temperature: cropAnimator.weatherConditions.temperature + 2, // Low pressure often brings warmer air
+            humidity: cropAnimator.weatherConditions.humidity + 10,
+            windSpeed: cropAnimator.weatherConditions.windSpeed + 5
+          });
+          showNotification('🌀 Low pressure system: Enhanced transpiration, potential storm conditions', 'warning', 4000);
+          break;
+        case 'normal':
+          cropAnimator.updateWeatherConditions({ pressure: 1013 });
+          showNotification('⚖️ Normal atmospheric pressure: Stable plant growth conditions', 'info', 3000);
+          break;
+        case 'high':
+          cropAnimator.updateWeatherConditions({ 
+            pressure: 1035,
+            temperature: cropAnimator.weatherConditions.temperature - 1, // High pressure often cooler
+            humidity: cropAnimator.weatherConditions.humidity - 5,
+            windSpeed: Math.max(1, cropAnimator.weatherConditions.windSpeed - 3)
+          });
+          showNotification('☁️ High pressure system: Reduced transpiration, stable but slower growth', 'info', 4000);
+          break;
+      }
+      updateSliderFromWeather();
+    }
+    
+    function simulateWindConditions(type) {
+      if (!cropAnimator) return;
+      
+      switch(type) {
+        case 'calm':
+          cropAnimator.updateWeatherConditions({ 
+            windSpeed: 2,
+            humidity: cropAnimator.weatherConditions.humidity + 5 // Less evaporation
+          });
+          showNotification('🍃 Calm conditions: Reduced gas exchange, higher humidity around plants', 'info', 4000);
+          break;
+        case 'moderate':
+          cropAnimator.updateWeatherConditions({ 
+            windSpeed: 12,
+            humidity: Math.max(30, cropAnimator.weatherConditions.humidity - 3)
+          });
+          showNotification('🌬️ Moderate wind: Optimal transpiration and gas exchange', 'success', 3000);
+          break;
+        case 'strong':
+          cropAnimator.updateWeatherConditions({ 
+            windSpeed: 28,
+            humidity: Math.max(25, cropAnimator.weatherConditions.humidity - 10),
+            temperature: cropAnimator.weatherConditions.temperature - 2 // Wind chill effect
+          });
+          showNotification('🌪️ Strong winds: Mechanical stress, excessive water loss, potential damage', 'error', 4000);
+          break;
+      }
+      updateSliderFromWeather();
+    }
+    
+    function simulateAirQuality(type) {
+      if (!cropAnimator) return;
+      
+      switch(type) {
+        case 'good':
+          cropAnimator.updateWeatherConditions({ 
+            airQuality: 35,
+            uv_index: cropAnimator.weatherConditions.uv_index || 5 // Clear air, more UV
+          });
+          showNotification('🌿 Excellent air quality: Optimal photosynthesis and plant health', 'success', 4000);
+          break;
+        case 'moderate':
+          cropAnimator.updateWeatherConditions({ 
+            airQuality: 75,
+            uv_index: Math.max(2, (cropAnimator.weatherConditions.uv_index || 5) - 1)
+          });
+          showNotification('🌫️ Moderate air quality: Slight reduction in photosynthesis efficiency', 'warning', 4000);
+          break;
+        case 'poor':
+          cropAnimator.updateWeatherConditions({ 
+            airQuality: 180,
+            uv_index: Math.max(1, (cropAnimator.weatherConditions.uv_index || 5) - 3), // Smog blocks UV
+            temperature: cropAnimator.weatherConditions.temperature + 1 // Heat island effect
+          });
+          showNotification('😷 Poor air quality: Reduced photosynthesis, leaf damage, stunted growth', 'error', 5000);
+          break;
+      }
+      updateSliderFromWeather();
+    }
+    
+    function simulateSoilCondition(type) {
+      if (!cropAnimator) return;
+      
+      switch(type) {
+        case 'dry':
+          cropAnimator.updateWeatherConditions({ 
+            soilMoisture: 25,
+            soilTemperature: cropAnimator.weatherConditions.temperature + 5, // Dry soil heats up more
+            rainfall: 0
+          });
+          showNotification('🌵 Dry soil conditions: Water stress, reduced nutrient uptake, wilting', 'error', 4000);
+          break;
+        case 'optimal':
+          cropAnimator.updateWeatherConditions({ 
+            soilMoisture: 60,
+            soilTemperature: cropAnimator.weatherConditions.temperature - 2, // Moist soil moderates temperature
+            rainfall: 3
+          });
+          showNotification('🌱 Optimal soil conditions: Perfect water and nutrient availability', 'success', 3000);
+          break;
+        case 'waterlogged':
+          cropAnimator.updateWeatherConditions({ 
+            soilMoisture: 85,
+            soilTemperature: cropAnimator.weatherConditions.temperature - 3, // Waterlogged soil is cooler
+            rainfall: 10,
+            airQuality: (cropAnimator.weatherConditions.airQuality || 50) + 10 // Stagnant conditions
+          });
+          showNotification('💧 Waterlogged soil: Root rot risk, poor aeration, fungal diseases', 'error', 5000);
+          break;
+      }
+      updateSliderFromWeather();
+    }
+    
+    function simulateHeatIndex(type) {
+      if (!cropAnimator) return;
+      
+      switch(type) {
+        case 'low':
+          cropAnimator.updateWeatherConditions({ 
+            temperature: 22,
+            humidity: 55,
+            heatIndex: 24
+          });
+          showNotification('❄️ Low heat index: Comfortable conditions, optimal metabolic rates', 'success', 3000);
+          break;
+        case 'moderate':
+          cropAnimator.updateWeatherConditions({ 
+            temperature: 29,
+            humidity: 70,
+            heatIndex: 35
+          });
+          showNotification('🌤️ Moderate heat index: Increased transpiration, slight stress', 'warning', 4000);
+          break;
+        case 'extreme':
+          cropAnimator.updateWeatherConditions({ 
+            temperature: 38,
+            humidity: 65,
+            heatIndex: 45,
+            windSpeed: Math.max(1, cropAnimator.weatherConditions.windSpeed - 2) // Hot air rises, less surface wind
+          });
+          showNotification('👥 Extreme heat index: Severe plant stress, cellular damage, wilting', 'error', 5000);
+          break;
+      }
+      updateSliderFromWeather();
+    }
+    
+    // Initialize sliders when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Wait for animator to initialize
+      setTimeout(() => {
+        setupSliders();
+        updateMetrics();
+        
+        // Update metrics every 2 seconds
+        setInterval(updateMetrics, 2000);
+      }, 1000);
+    });
+    
+    function setupSliders() {
+      const tempSlider = document.getElementById('tempSlider');
+      const humiditySlider = document.getElementById('humiditySlider');
+      const rainfallSlider = document.getElementById('rainfallSlider');
+      const windSlider = document.getElementById('windSlider');
+      
+      if (tempSlider) {
+        tempSlider.addEventListener('input', function() {
+          document.getElementById('tempValue').textContent = this.value + '°C';
+          if (cropAnimator) {
+            cropAnimator.updateWeatherConditions({ temperature: parseFloat(this.value) });
+          }
+        });
+      }
+      
+      if (humiditySlider) {
+        humiditySlider.addEventListener('input', function() {
+          document.getElementById('humidityValue').textContent = this.value + '%';
+          if (cropAnimator) {
+            cropAnimator.updateWeatherConditions({ humidity: parseFloat(this.value) });
+          }
+        });
+      }
+      
+      if (rainfallSlider) {
+        rainfallSlider.addEventListener('input', function() {
+          document.getElementById('rainfallValue').textContent = this.value + 'mm';
+          if (cropAnimator) {
+            cropAnimator.updateWeatherConditions({ rainfall: parseFloat(this.value) });
+          }
+        });
+      }
+      
+      if (windSlider) {
+        windSlider.addEventListener('input', function() {
+          document.getElementById('windValue').textContent = this.value + ' km/h';
+          if (cropAnimator) {
+            cropAnimator.updateWeatherConditions({ windSpeed: parseFloat(this.value) });
+          }
+        });
+      }
+    }
+    
+    function updateSliderFromWeather() {
+      if (!cropAnimator) return;
+      
+      const conditions = cropAnimator.weatherConditions;
+      
+      const tempSlider = document.getElementById('tempSlider');
+      const humiditySlider = document.getElementById('humiditySlider');
+      const rainfallSlider = document.getElementById('rainfallSlider');
+      const windSlider = document.getElementById('windSlider');
+      
+      if (tempSlider) {
+        tempSlider.value = conditions.temperature;
+        document.getElementById('tempValue').textContent = conditions.temperature.toFixed(1) + '°C';
+      }
+      
+      if (humiditySlider) {
+        humiditySlider.value = conditions.humidity;
+        document.getElementById('humidityValue').textContent = conditions.humidity.toFixed(0) + '%';
+      }
+      
+      if (rainfallSlider) {
+        rainfallSlider.value = conditions.rainfall;
+        document.getElementById('rainfallValue').textContent = conditions.rainfall.toFixed(1) + 'mm';
+      }
+      
+      if (windSlider) {
+        windSlider.value = conditions.windSpeed;
+        document.getElementById('windValue').textContent = conditions.windSpeed.toFixed(1) + ' km/h';
+      }
+    }
+    
+    function updateMetrics() {
+      if (!cropAnimator) return;
+      
+      const growthRate = cropAnimator.calculateGrowthRate();
+      const isOptimal = cropAnimator.isOptimalConditions();
+      const conditions = cropAnimator.weatherConditions;
+      const config = cropAnimator.cropConfigs[cropAnimator.currentCrop];
+      
+      // Calculate health score based on conditions
+      let healthScore = 100;
+      const tempDiff = Math.abs(conditions.temperature - (config.optimalTemp.min + config.optimalTemp.max) / 2);
+      const humidityDiff = Math.abs(conditions.humidity - (config.optimalHumidity.min + config.optimalHumidity.max) / 2);
+      
+      healthScore -= Math.min(tempDiff * 2, 30);
+      healthScore -= Math.min(humidityDiff, 25);
+      if (conditions.rainfall < config.optimalRainfall.min) healthScore -= 20;
+      if (conditions.rainfall > config.optimalRainfall.max) healthScore -= 15;
+      
+      healthScore = Math.max(healthScore, 10);
+      
+      // Determine stress level
+      let stressLevel = 'Low';
+      if (healthScore < 50) stressLevel = 'High';
+      else if (healthScore < 75) stressLevel = 'Medium';
+      
+      // Calculate yield potential
+      const yieldPotential = Math.round(healthScore * growthRate);
+      
+      // Update display
+      document.getElementById('growthRateMetric').textContent = Math.round(growthRate * 100) + '%';
+      document.getElementById('healthScoreMetric').textContent = Math.round(healthScore) + '%';
+      document.getElementById('stressLevelMetric').textContent = stressLevel;
+      document.getElementById('yieldPotentialMetric').textContent = yieldPotential + '%';
+      
+      // Update colors based on performance
+      const growthElement = document.getElementById('growthRateMetric');
+      const healthElement = document.getElementById('healthScoreMetric');
+      const yieldElement = document.getElementById('yieldPotentialMetric');
+      
+      const getColor = (value) => {
+        if (value >= 80) return '#4CAF50';
+        if (value >= 60) return '#FF9800';
+        return '#F44336';
+      };
+      
+      if (growthElement) growthElement.style.color = getColor(growthRate * 100);
+      if (healthElement) healthElement.style.color = getColor(healthScore);
+      if (yieldElement) yieldElement.style.color = getColor(yieldPotential);
+    }
+  </script>
+</body>
+</html>

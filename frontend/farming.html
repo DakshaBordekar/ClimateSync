@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClimateSync - Farmer Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="farming.css">
+  <link rel="stylesheet" href="crop-growth-animations.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+</head>
+<body>
+  <!-- Language Selector -->
+  <div class="language-selector">
+    <select id="languageSelect" onchange="changeLanguage()">
+      <option value="en">English</option>
+      <option value="hi">हिंदी (Hindi)</option>
+      <option value="ta">தமிழ் (Tamil)</option>
+      <option value="te">తెలుగు (Telugu)</option>
+      <option value="mr">मराठी (Marathi)</option>
+      <option value="bn">বাংলা (Bengali)</option>
+      <option value="gu">ગુજરાતી (Gujarati)</option>
+      <option value="kn">ಕನ್ನಡ (Kannada)</option>
+      <option value="ml">മലയാളം (Malayalam)</option>
+      <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+      <option value="ur">اردو (Urdu)</option>
+    </select>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="navigation">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <i class="fas fa-seedling"></i>
+        <span data-i18n="climateSyncFarming">ClimateSync Farming</span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">
+          <i class="fas fa-cloud-sun"></i>
+          <span data-i18n="weatherDashboard">Weather Dashboard</span>
+        </a>
+        <a href="farming.html" class="nav-link active">
+          <i class="fas fa-tractor"></i>
+          <span data-i18n="farmingDashboard">Farming Dashboard</span>
+        </a>
+        <a href="farmer-profit-dashboard.html" class="nav-link">
+          <i class="fas fa-calculator"></i>
+          <span data-i18n="profitCalculator">Profit Calculator</span>
+        </a>
+        <a href="crop-animation-demo.html" class="nav-link">
+          <i class="fas fa-seedling"></i>
+          <span data-i18n="cropAnimations">Crop Animations</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <div class="container farming-container">
+    <!-- Header Section -->
+    <header class="farming-header">
+      <div class="header-content">
+        <div class="farming-title">
+          <h1>🌾 <span data-i18n="smartFarmingDashboard">Smart Farming Dashboard</span></h1>
+          <p data-i18n="weatherInsights">Weather insights simplified for farmers</p>
+        </div>
+        <div class="season-indicator">
+          <span class="season-icon">🌱</span>
+          <span class="season-text" id="currentSeason" data-i18n="loading">Loading...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Controls Section -->
+    <section class="farming-controls">
+      <div class="controls-grid">
+        <div class="control-group location-search-group">
+          <label>📍 <span data-i18n="searchYourLocation">Search Your Location</span></label>
+          <div class="location-search-container">
+            <div class="search-wrapper">
+              <i class="fas fa-search search-icon"></i>
+              <input type="text" id="locationSearch" class="location-search farming-search" data-i18n="searchPlaceholder" placeholder="Search any city, village, or location worldwide..." autocomplete="off">
+              <button id="searchBtn" class="search-btn farming-search-btn" onclick="searchLocation()">
+                <i class="fas fa-globe"></i>
+              </button>
+            </div>
+            <!-- Search Results Dropdown -->
+            <div id="searchResults" class="search-results" style="display: none;"></div>
+          </div>
+        </div>
+        <div class="control-group">
+          <label for="cropSelect">🌾 <span data-i18n="selectYourCrop">Select Your Crop</span></label>
+          <select id="cropSelect" class="farming-select">
+            <option value="rice" data-i18n="rice">Rice (धान)</option>
+            <option value="wheat" data-i18n="wheat">Wheat (गेहूं)</option>
+            <option value="cotton" data-i18n="cotton">Cotton (कपास)</option>
+            <option value="sugarcane" data-i18n="sugarcane">Sugarcane (गन्ना)</option>
+            <option value="tomato" data-i18n="tomato">Tomato (टमाटर)</option>
+            <option value="onion" data-i18n="onion">Onion (प्याज)</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="stageSelect">🌱 <span data-i18n="growthStage">Growth Stage</span></label>
+          <select id="stageSelect" class="farming-select">
+            <option value="seedling" data-i18n="seedling">Seedling (बीज)</option>
+            <option value="vegetative" data-i18n="growing">Growing (बढ़ना)</option>
+            <option value="flowering" data-i18n="flowering">Flowering (फूल)</option>
+            <option value="fruiting" data-i18n="fruiting">Fruiting (फल)</option>
+            <option value="harvest" data-i18n="harvest">Harvest (कटाई)</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Weather Summary for Farmers -->
+    <section class="weather-summary">
+      <div class="weather-cards">
+        <div class="weather-card temperature-card">
+          <div class="card-icon">🌡️</div>
+          <div class="card-content">
+            <div class="card-value" id="temperature">--°C</div>
+            <div class="card-label" data-i18n="temperature">Temperature</div>
+            <div class="card-status" id="tempStatus" data-i18n="checking">Checking...</div>
+            <div class="visual-indicator">
+              <div class="temperature-bar" id="tempBar">
+                <div class="temp-fill" id="tempFill"></div>
+                <div class="temp-marker ideal" id="tempIdeal" data-i18n="ideal">Ideal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="weather-card humidity-card">
+          <div class="card-icon">💧</div>
+          <div class="card-content">
+            <div class="card-value" id="humidity">--%</div>
+            <div class="card-label" data-i18n="humidity">Humidity</div>
+            <div class="card-status" id="humidityStatus" data-i18n="checking">Checking...</div>
+            <div class="visual-indicator">
+              <div class="humidity-circle" id="humidityCircle">
+                <svg width="80" height="80">
+                  <circle cx="40" cy="40" r="35" fill="none" stroke="#e0e0e0" stroke-width="6"/>
+                  <circle cx="40" cy="40" r="35" fill="none" stroke="#2196f3" stroke-width="6" 
+                          stroke-dasharray="220" stroke-dashoffset="220" id="humidityProgress"
+                          transform="rotate(-90 40 40)"/>
+                </svg>
+                <div class="circle-text" id="humidityText">0%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="weather-card rainfall-card">
+          <div class="card-icon">🌧️</div>
+          <div class="card-content">
+            <div class="card-value" id="rainfall">-- mm</div>
+            <div class="card-label" data-i18n="rainfall">Rainfall</div>
+            <div class="card-status" id="rainfallStatus" data-i18n="checking">Checking...</div>
+            <div class="visual-indicator">
+              <div class="rainfall-animation" id="rainfallAnimation">
+                <div class="rain-container">
+                  <div class="raindrop"></div>
+                  <div class="raindrop"></div>
+                  <div class="raindrop"></div>
+                  <div class="raindrop"></div>
+                  <div class="raindrop"></div>
+                </div>
+                <div class="water-level" id="waterLevel">
+                  <div class="water-fill" id="waterFill"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Enhanced Weather Information Grid -->
+    <section class="enhanced-weather-section">
+      <h2>🌤️ <span data-i18n="comprehensiveWeather">Comprehensive Weather Information</span></h2>
+      
+      <div class="enhanced-weather-grid">
+        <!-- Atmospheric Pressure -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #2196f3, #1976d2);">🌡️</div>
+            <h3 class="weather-card-title" data-i18n="atmosphericPressure">Atmospheric Pressure</h3>
+          </div>
+          <div class="pressure-gauge">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" class="gauge-bg"></circle>
+              <circle cx="50" cy="50" r="40" class="gauge-fill" id="pressureGauge"
+                      stroke-dasharray="0 251" stroke-dashoffset="0"></circle>
+            </svg>
+            <div class="pressure-value">
+              <div class="value" id="pressureValue">--</div>
+              <div class="unit">hPa</div>
+            </div>
+          </div>
+          <div class="pressure-trend" id="pressureTrend">
+            <span id="pressureTrendIcon">📊</span>
+            <span id="pressureTrendText" data-i18n="checking">Checking...</span>
+          </div>
+        </div>
+
+        <!-- Wind Information with Compass -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #00bcd4, #0097a7);">💨</div>
+            <h3 class="weather-card-title" data-i18n="windConditions">Wind Conditions</h3>
+          </div>
+          <div class="wind-compass" id="windCompass">
+            <div class="compass-directions">
+              <span class="north">N</span>
+              <span class="east">E</span>
+              <span class="south">S</span>
+              <span class="west">W</span>
+            </div>
+            <div class="wind-arrow" id="windArrow"></div>
+          </div>
+          <div class="wind-info">
+            <div class="wind-speed" id="windSpeed">-- km/h</div>
+            <div class="wind-direction" id="windDirectionText">--</div>
+          </div>
+        </div>
+
+        <!-- UV Index Meter -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #ff9800, #f57c00);">☀️</div>
+            <h3 class="weather-card-title" data-i18n="uvIndex">UV Index</h3>
+          </div>
+          <div class="uv-meter">
+            <div class="uv-value" id="uvValue">--</div>
+            <div class="uv-scale">
+              <div class="uv-indicator" id="uvIndicator"></div>
+            </div>
+            <div class="uv-level" id="uvLevel" data-i18n="checking">Checking...</div>
+          </div>
+        </div>
+
+        <!-- Air Quality Index -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #9c27b0, #7b1fa2);">🌫️</div>
+            <h3 class="weather-card-title" data-i18n="airQuality">Air Quality</h3>
+          </div>
+          <div class="air-quality-indicator">
+            <div class="aqi-circle">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="35" class="aqi-bg"></circle>
+                <circle cx="50" cy="50" r="35" class="aqi-fill" id="aqiCircle"
+                        stroke-dasharray="0 220" stroke-dashoffset="0"></circle>
+              </svg>
+              <div class="aqi-value">
+                <div class="value" id="aqiValue">--</div>
+                <div class="label">AQI</div>
+              </div>
+            </div>
+            <div class="aqi-status" id="aqiStatus" data-i18n="checking">Checking...</div>
+          </div>
+        </div>
+
+        <!-- Soil Conditions -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #795548, #5d4037);">🌱</div>
+            <h3 class="weather-card-title" data-i18n="soilConditions">Soil Conditions</h3>
+          </div>
+          <div class="soil-conditions">
+            <div class="soil-metric">
+              <div class="label" data-i18n="temperature">Temperature</div>
+              <div class="value" id="soilTemp">--</div>
+              <div class="unit">°C</div>
+              <div class="soil-temp-bar">
+                <div class="soil-temp-fill" id="soilTempBar"></div>
+              </div>
+            </div>
+            <div class="soil-metric">
+              <div class="label" data-i18n="moisture">Moisture</div>
+              <div class="value" id="soilMoisture">--</div>
+              <div class="unit">%</div>
+              <div class="soil-moisture-circle">
+                <svg viewBox="0 0 60 60">
+                  <circle cx="30" cy="30" r="25" class="moisture-bg"></circle>
+                  <circle cx="30" cy="30" r="25" class="moisture-fill" id="soilMoistureCircle"
+                          stroke-dasharray="0 157" stroke-dashoffset="0"></circle>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Growing Degree Days -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #7cb342, #558b2f);">📈</div>
+            <h3 class="weather-card-title" data-i18n="growingDegreeDays">Growing Degree Days</h3>
+          </div>
+          <div class="gdd-display">
+            <div class="gdd-value" id="gddValue">--</div>
+            <div class="gdd-label" data-i18n="todaysGDD">Today's GDD</div>
+            <div class="gdd-progress">
+              <div class="gdd-progress-fill" id="gddProgress"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Heat Index -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #f44336, #d32f2f);">🔥</div>
+            <h3 class="weather-card-title" data-i18n="heatIndex">Heat Index</h3>
+          </div>
+          <div class="heat-index-display">
+            <div class="heat-index-value" id="heatIndexValue">--°C</div>
+            <div class="heat-index-level" id="heatIndexLevel" data-i18n="checking">Checking...</div>
+          </div>
+        </div>
+
+        <!-- Moon Phase -->
+        <div class="enhanced-weather-card">
+          <div class="weather-card-header">
+            <div class="weather-card-icon" style="background: linear-gradient(135deg, #607d8b, #455a64);">🌙</div>
+            <h3 class="weather-card-title" data-i18n="moonPhase">Moon Phase</h3>
+          </div>
+          <div class="moon-phase-display">
+            <span class="moon-icon" id="moonIcon">🌙</span>
+            <div class="moon-phase-name" id="moonPhaseName">--</div>
+            <div class="moon-illumination" id="moonIllumination">-- % visible</div>
+          </div>
+        </div>
+      </div>
+    </section>
+      
+      <!-- Weather Chart -->
+      <div class="weather-chart-container">
+        <div class="chart-card">
+          <h3>📊 Daily Weather Pattern</h3>
+          <div class="chart-area" id="weatherChart">
+            <canvas id="weatherCanvas" width="400" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comprehensive Weather Scene -->
+      <div class="comprehensive-weather-scene">
+        <!-- Main Weather Scene -->
+        <div class="main-weather-scene">
+          <div class="scene-container" id="weatherScene">
+            <div class="sun" id="sunElement"></div>
+            <div class="clouds" id="cloudsElement">
+              <div class="cloud cloud1"></div>
+              <div class="cloud cloud2"></div>
+            </div>
+            <div class="precipitation" id="precipitationElement">
+              <!-- Dynamic precipitation will be added here -->
+            </div>
+            <div class="weather-overlay-info">
+              <div class="scene-temp" id="sceneTemp">--°C</div>
+              <div class="scene-condition" id="sceneCondition">Loading...</div>
+            </div>
+            <div class="ground">
+              <!-- Ground with CSS grass effect -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Farming Recommendations -->
+    <section class="recommendations-section">
+      <h2>🎯 Smart Recommendations for You</h2>
+      
+      <!-- Overall Condition -->
+      <div class="overall-condition" id="overallCondition">
+        <div class="condition-icon">⏳</div>
+        <div class="condition-text">
+          <h3 data-i18n="loadingFarmingConditions">Loading your farming conditions...</h3>
+          <p data-i18n="pleaseWaitAnalyzeWeather">Please wait while we analyze the weather</p>
+        </div>
+      </div>
+
+      <!-- Recommendation Cards -->
+      <div class="recommendation-grid" id="recommendationGrid">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
+
+<!-- Suitable Crops -->
+    <section class="suitable-crops-section">
+      <div class="ml-header">
+        <h2>🌾 AI Crop Recommendations</h2>
+        <div class="recommendation-buttons">
+          <button id="generateCropRecommendations" class="predict-btn" onclick="loadCropRecommendations()">
+            <i class="fas fa-brain"></i> Get AI Recommendations
+          </button>
+          <button id="generateEnhancedRecommendations" class="predict-btn enhanced-btn" onclick="loadEnhancedCropRecommendations()">
+            <i class="fas fa-chart-line"></i> Enhanced with Real Data
+          </button>
+        </div>
+      </div>
+      <div class="crops-grid" id="cropsGrid">
+        <!-- Dynamic content will be inserted here -->
+      </div>
+    </section>
+
+    <!-- AI Agents Analysis -->
+    <section class="ai-analysis-section">
+      <div class="ai-header">
+        <h2>🤖 AI Farming Agents</h2>
+        <div class="ai-controls">
+          <div class="farm-size-input">
+            <label for="farmSizeInput" data-i18n="farmSizeHectares">Farm Size (hectares):</label>
+            <input type="number" id="farmSizeInput" value="1" min="0.1" max="1000" step="0.1" class="farming-input">
+          </div>
+          <button id="runAIAnalysis" class="ai-analysis-btn" onclick="loadAIAnalysis()">
+            <i class="fas fa-robot"></i> Run AI Analysis
+          </button>
+        </div>
+      </div>
+      <div class="ai-description">
+        <p>🧠 Our AI agents analyze weather patterns, market trends, resource optimization, and risk factors to provide you with comprehensive farming insights.</p>
+      </div>
+      <div class="ai-analysis-container" id="aiAnalysisContainer">
+        <div class="ai-placeholder">
+          <div class="ai-placeholder-icon">🤖</div>
+          <h3 data-i18n="aiAnalysisReady">AI Analysis Ready</h3>
+          <p>Click "Run AI Analysis" to get comprehensive insights from our farming AI agents including:</p>
+          <ul>
+            <li>🌱 <strong data-i18n="cropAdvisoryAgent">Crop Advisory Agent</strong> - <span data-i18n="personalizedCropRecommendations">Personalized crop recommendations</span></li>
+            <li>🌤️ <strong data-i18n="weatherPredictionAgent">Weather Prediction Agent</strong> - <span data-i18n="advancedWeatherAnalysis">Advanced weather analysis</span></li>
+            <li>💰 <strong data-i18n="marketIntelligenceAgent">Market Intelligence Agent</strong> - <span data-i18n="priceTrendsMarketInsights">Price trends and market insights</span></li>
+            <li>💧 <strong data-i18n="resourceOptimizationAgent">Resource Optimization Agent</strong> - <span data-i18n="waterFertilizerOptimization">Water and fertilizer optimization</span></li>
+            <li>⚠️ <strong data-i18n="riskAssessmentAgent">Risk Assessment Agent</strong> - <span data-i18n="pestDiseaseClimateRiskAnalysis">Pest, disease, and climate risk analysis</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Crop Growth Animation -->    
+    <section class="crop-animation-section">
+      <div class="crop-animation-header">
+        <h2>🌱 Crop Growth Animation</h2>
+        <p>Watch how current weather conditions affect your crop's growth in real-time</p>
+        <div class="animation-controls-header">
+          <button class="animation-demo-btn" onclick="window.open('crop-animation-demo.html', '_blank')">
+            <i class="fas fa-external-link-alt"></i>
+            Full Animation Demo
+          </button>
+          <button class="animation-toggle-btn" id="cropAnimationToggle" onclick="toggleCropAnimation()">
+            <i class="fas fa-play"></i>
+            <span id="animationToggleText" data-i18n="startAnimation">Start Animation</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Embedded Crop Animation -->
+      <div class="crop-animation-embedded" id="cropGrowthAnimation">
+        <!-- Animation will be inserted here by JavaScript -->
+      </div>
+      
+      <!-- Quick Weather Impact Demo -->
+      <div class="weather-impact-demo">
+        <h3>🌦️ See How Weather Affects Growth</h3>
+        <div class="impact-demo-buttons">
+          <button class="impact-demo-btn pressure" onclick="demonstrateAtmosphericPressure()">
+            <i class="fas fa-tachometer-alt"></i>
+            Atmospheric Pressure
+          </button>
+          <button class="impact-demo-btn wind" onclick="demonstrateWindConditions()">
+            <i class="fas fa-wind"></i>
+            Wind Conditions
+          </button>
+          <button class="impact-demo-btn air-quality" onclick="demonstrateAirQuality()">
+            <i class="fas fa-smog"></i>
+            Air Quality
+          </button>
+          <button class="impact-demo-btn soil" onclick="demonstrateSoilCondition()">
+            <i class="fas fa-seedling"></i>
+            Soil Conditions
+          </button>
+          <button class="impact-demo-btn heat" onclick="demonstrateHeatIndex()">
+            <i class="fas fa-thermometer-full"></i>
+            Heat Index
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+      <h2>🚀 Quick Actions</h2>
+      <div class="actions-grid">
+        <button class="action-btn" onclick="window.open('farmer-profit-dashboard.html', '_blank')">
+          <i class="fas fa-calculator"></i>
+          <span data-i18n="profitCalculator">Profit Calculator</span>
+        </button>
+        <button class="action-btn" onclick="refreshFarmingData()">
+          <i class="fas fa-sync-alt"></i>
+          <span data-i18n="refreshData">Refresh Data</span>
+        </button>
+      </div>
+    </section>
+
+
+
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner">
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
+      <div class="spinner-ring"></div>
+    </div>
+    <p class="loading-text" data-i18n="loadingFarmingInsights">Loading farming insights...</p>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal" id="forecastModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal('forecastModal')">&times;</span>
+      <h2>7-Day Weather Forecast</h2>
+      <div id="forecastContent" data-i18n="comingSoon">Coming soon...</div>
+    </div>
+  </div>
+
+  <div class="modal" id="calendarModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal('calendarModal')">&times;</span>
+      <h2 data-i18n="seasonalCropCalendar">Seasonal Crop Calendar</h2>
+      <div id="calendarContent" data-i18n="loadingCalendar">Loading calendar...</div>
+    </div>
+  </div>
+
+  <script src="farming.js"></script>
+  <script src="crop-growth-animator.js"></script>
+  <script src="languages.js"></script>
+  <script>
+    // Language change function
+    function changeLanguage() {
+      const select = document.getElementById('languageSelect');
+      const selectedLang = select.value;
+      setLanguage(selectedLang);
+      // Dispatch custom event for other scripts to react
+      document.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: selectedLang } }));
+    }
+    
+    // Set language selector to current language on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const currentLang = getCurrentLanguage();
+      document.getElementById('languageSelect').value = currentLang;
+      // Update language on page load
+      updateLanguage(currentLang);
+    });
+    
+    // Integration functions for crop animation with farming dashboard
+    let isAnimationActive = false;
+    
+    function toggleCropAnimation() {
+      const toggleBtn = document.getElementById('cropAnimationToggle');
+      const toggleText = document.getElementById('animationToggleText');
+      
+      if (!isAnimationActive) {
+        // Initialize animation if not already done
+        if (!cropAnimator) {
+          cropAnimator = new CropGrowthAnimator('cropGrowthAnimation');
+        }
+        isAnimationActive = true;
+        toggleBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        toggleText.textContent = 'Pause Animation';
+        
+        // Update animation with current weather data
+        updateAnimationWithCurrentWeather();
+      } else {
+        if (cropAnimator) {
+          cropAnimator.toggleAnimation();
+        }
+        isAnimationActive = !cropAnimator.isAnimating;
+        toggleBtn.innerHTML = `<i class="fas fa-${cropAnimator.isAnimating ? 'pause' : 'play'}"></i>`;
+        toggleText.textContent = cropAnimator.isAnimating ? 'Pause Animation' : 'Resume Animation';
+      }
+    }
+    
+    function updateAnimationWithCurrentWeather() {
+      if (!cropAnimator) return;
+      
+      // Get current weather data from farming dashboard
+      const currentWeatherData = {
+        temperature: parseFloat(document.getElementById('temperature')?.textContent?.replace('°C', '')) || 25,
+        humidity: parseFloat(document.getElementById('humidity')?.textContent?.replace('%', '')) || 60,
+        rainfall: parseFloat(document.getElementById('rainfall')?.textContent?.replace(' mm', '')) || 0,
+        wind_speed: parseFloat(document.getElementById('windSpeed')?.textContent?.replace(' km/h', '')) || 5,
+        pressure: parseFloat(document.getElementById('pressureValue')?.textContent) || 1013,
+        soil_moisture: 50 // Default value, could be enhanced
+      };
+      
+      console.log('Updating crop animation with current weather:', currentWeatherData);
+      cropAnimator.updateFromWeatherData(currentWeatherData);
+      
+      // Update crop type if changed
+      const selectedCrop = document.getElementById('cropSelect')?.value || 'rice';
+      if (cropAnimator.currentCrop !== selectedCrop) {
+        cropAnimator.changeCrop(selectedCrop);
+      }
+    }
+    
+    // Enhanced atmospheric effect demonstration functions
+    function demonstrateAtmosphericPressure() {
+      if (!cropAnimator) {
+        toggleCropAnimation();
+        setTimeout(() => demonstrateAtmosphericPressure(), 1000);
+        return;
+      }
+      
+      // Alternate between high and low pressure
+      const currentPressure = cropAnimator.weatherConditions.pressure || 1013;
+      if (currentPressure > 1020) {
+        cropAnimator.updateWeatherConditions({ 
+          pressure: 985,
+          windSpeed: cropAnimator.weatherConditions.windSpeed + 8,
+          humidity: cropAnimator.weatherConditions.humidity + 15
+        });
+        showNotification('🌀 Low pressure system: Storm conditions, enhanced transpiration', 'warning', 4000);
+      } else {
+        cropAnimator.updateWeatherConditions({ 
+          pressure: 1035,
+          windSpeed: Math.max(1, cropAnimator.weatherConditions.windSpeed - 5),
+          humidity: Math.max(30, cropAnimator.weatherConditions.humidity - 10)
+        });
+        showNotification('☁️ High pressure system: Clear skies, reduced plant transpiration', 'info', 4000);
+      }
+    }
+    
+    function demonstrateWindConditions() {
+      if (!cropAnimator) {
+        toggleCropAnimation();
+        setTimeout(() => demonstrateWindConditions(), 1000);
+        return;
+      }
+      
+      const currentWind = cropAnimator.weatherConditions.windSpeed || 5;
+      if (currentWind > 20) {
+        cropAnimator.updateWeatherConditions({ 
+          windSpeed: 3,
+          humidity: cropAnimator.weatherConditions.humidity + 8
+        });
+        showNotification('🍃 Calm conditions: Poor air circulation, higher disease risk', 'warning', 4000);
+      } else {
+        cropAnimator.updateWeatherConditions({ 
+          windSpeed: 28,
+          humidity: Math.max(25, cropAnimator.weatherConditions.humidity - 12),
+          temperature: cropAnimator.weatherConditions.temperature - 2
+        });
+        showNotification('🌪️ Strong winds: Mechanical damage, excessive water loss', 'error', 4000);
+      }
+    }
+    
+    function demonstrateAirQuality() {
+      if (!cropAnimator) {
+        toggleCropAnimation();
+        setTimeout(() => demonstrateAirQuality(), 1000);
+        return;
+      }
+      
+      const currentAQI = cropAnimator.weatherConditions.airQuality || 50;
+      if (currentAQI > 100) {
+        cropAnimator.updateWeatherConditions({ 
+          airQuality: 35,
+          uvIndex: (cropAnimator.weatherConditions.uvIndex || 5) + 1
+        });
+        showNotification('🌿 Excellent air quality: Clear atmosphere, optimal photosynthesis', 'success', 4000);
+      } else {
+        cropAnimator.updateWeatherConditions({ 
+          airQuality: 175,
+          uvIndex: Math.max(1, (cropAnimator.weatherConditions.uvIndex || 5) - 2),
+          temperature: cropAnimator.weatherConditions.temperature + 2
+        });
+        showNotification('😷 Poor air quality: Reduced photosynthesis, leaf damage from pollutants', 'error', 5000);
+      }
+    }
+    
+    function demonstrateSoilCondition() {
+      if (!cropAnimator) {
+        toggleCropAnimation();
+        setTimeout(() => demonstrateSoilCondition(), 1000);
+        return;
+      }
+      
+      const currentSoil = cropAnimator.weatherConditions.soilMoisture || 50;
+      if (currentSoil < 40) {
+        cropAnimator.updateWeatherConditions({ 
+          soilMoisture: 88,
+          soilTemperature: cropAnimator.weatherConditions.temperature - 4,
+          rainfall: 12
+        });
+        showNotification('💧 Waterlogged soil: Poor root aeration, fungal disease risk', 'error', 4000);
+      } else if (currentSoil > 75) {
+        cropAnimator.updateWeatherConditions({ 
+          soilMoisture: 22,
+          soilTemperature: cropAnimator.weatherConditions.temperature + 6,
+          rainfall: 0
+        });
+        showNotification('🌵 Dry soil: Water stress, reduced nutrient uptake', 'error', 4000);
+      } else {
+        cropAnimator.updateWeatherConditions({ 
+          soilMoisture: 62,
+          soilTemperature: cropAnimator.weatherConditions.temperature - 1,
+          rainfall: 4
+        });
+        showNotification('🌱 Optimal soil moisture: Perfect conditions for root development', 'success', 3000);
+      }
+    }
+    
+    function demonstrateHeatIndex() {
+      if (!cropAnimator) {
+        toggleCropAnimation();
+        setTimeout(() => demonstrateHeatIndex(), 1000);
+        return;
+      }
+      
+      const currentTemp = cropAnimator.weatherConditions.temperature || 25;
+      const currentHumidity = cropAnimator.weatherConditions.humidity || 60;
+      const currentHeatIndex = cropAnimator.calculateHeatIndex(currentTemp, currentHumidity);
+      
+      if (currentHeatIndex > 35) {
+        cropAnimator.updateWeatherConditions({ 
+          temperature: 24,
+          humidity: 55,
+          heatIndex: 26
+        });
+        showNotification('❄️ Low heat index: Comfortable growing conditions, optimal metabolism', 'success', 3000);
+      } else {
+        cropAnimator.updateWeatherConditions({ 
+          temperature: 39,
+          humidity: 68,
+          heatIndex: 48
+        });
+        showNotification('👥 Extreme heat index: Severe plant stress, cellular damage risk', 'error', 5000);
+      }
+    }
+    
+    // Auto-update animation when weather data changes
+    function onWeatherDataUpdate() {
+      if (isAnimationActive && cropAnimator) {
+        updateAnimationWithCurrentWeather();
+      }
+    }
+    
+    // Hook into existing weather update functions
+    const originalUpdateDashboard = window.updateDashboard;
+    window.updateDashboard = function(data) {
+      if (originalUpdateDashboard) {
+        originalUpdateDashboard(data);
+      }
+      
+      // Update animation after dashboard update
+      setTimeout(() => {
+        onWeatherDataUpdate();
+      }, 500);
+    };
+    
+    // Listen for crop selection changes
+    document.addEventListener('DOMContentLoaded', function() {
+      const cropSelect = document.getElementById('cropSelect');
+      if (cropSelect) {
+        cropSelect.addEventListener('change', function() {
+          if (cropAnimator) {
+            cropAnimator.changeCrop(this.value);
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
