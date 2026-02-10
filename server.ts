@@ -13,8 +13,8 @@ const FarmingService = require('./services/farmingService');
 const MLService = require('./ml/ml_service');
 
 // Import TypeScript ML bridge
-const { 
-  initializeAdvancedML, 
+const {
+  initializeAdvancedML,
   getAdvancedWeatherPredictions,
   getAdvancedCropRecommendations,
   getAdvancedAlertPredictions,
@@ -100,14 +100,14 @@ class ClimateServer {
   private server: HTTPServer;
   private io: SocketIOServer;
   private config: ServerConfig;
-  
+
   // Service instances
   private climateAPI: any;
   private climateDB: any;
   private alertService: any;
   private farmingService: any;
   private mlService: any;
-  
+
   // Server state
   private cities: string[] = [];
   private cityIds: Record<string, number> = {};
@@ -145,10 +145,10 @@ class ClimateServer {
       origin: this.config.corsOrigin,
       credentials: true
     }));
-    
+
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-    
+
     // Serve static frontend files
     this.app.use(express.static(this.config.staticPath));
 
@@ -166,7 +166,7 @@ class ClimateServer {
   private async initializeServices(): Promise<void> {
     try {
       console.log('🔧 Initializing backend services...');
-      
+
       // Initialize core services
       this.climateAPI = new ClimateAPIService();
       this.climateDB = new ClimateDB();
@@ -185,7 +185,7 @@ class ClimateServer {
 
       // Load cities from database
       this.loadCitiesFromDB();
-      
+
       console.log('✅ All backend services initialized successfully');
     } catch (error) {
       console.error('❌ Error initializing services:', error);
@@ -209,6 +209,7 @@ class ClimateServer {
     this.app.use('/api/farming', farmingRouter);
     this.app.use('/api/ml', mlRouter);
     this.app.use('/api/ml-advanced', mlAdvancedRouter);
+    this.app.use('/api/profit', require('./routes/profit-prediction'));
 
     // Health check endpoint with enhanced information
     this.app.get('/api/health', (req: Request, res: Response) => {
@@ -228,7 +229,7 @@ class ClimateServer {
         memory: process.memoryUsage(),
         nodeVersion: process.version
       };
-      
+
       res.json(healthStatus);
     });
 
@@ -293,18 +294,18 @@ class ClimateServer {
 
         console.log(`User ${socket.id} subscribed to ${city} weather`);
         socket.join(`weather_${city}`);
-        
+
         // Save subscription to database with error handling
         try {
           const cityInfo: CityInfo | null = this.climateDB.getCityByName(city);
           if (cityInfo) {
             this.alertService.subscribeToAlerts(
-              socket.id, 
-              cityInfo.id, 
-              city, 
+              socket.id,
+              cityInfo.id,
+              city,
               ['FLOOD', 'HEAT', 'DROUGHT', 'STORM']
             );
-            
+
             // Send immediate weather update
             this.sendCurrentWeatherToSocket(socket, city);
           } else {
@@ -360,23 +361,23 @@ class ClimateServer {
       const allCities: CityInfo[] = this.climateDB.getAllCities();
       this.cities = allCities.slice(0, 10).map(city => city.name);
       this.cityIds = {};
-      
+
       allCities.forEach(city => {
         this.cityIds[city.name] = city.imd_id;
       });
-      
+
       console.log(`Loaded ${this.cities.length} cities for weather monitoring:`, this.cities);
       console.log(`Total cities available: ${allCities.length}`);
     } catch (error) {
       console.error('Error loading cities from database:', error);
       // Fallback to default cities
       this.cities = ['Delhi', 'Mumbai', 'Chennai', 'Bangalore', 'Kolkata'];
-      this.cityIds = { 
-        Delhi: 42182, 
-        Mumbai: 43003, 
-        Chennai: 43279, 
-        Bangalore: 43295, 
-        Kolkata: 42809 
+      this.cityIds = {
+        Delhi: 42182,
+        Mumbai: 43003,
+        Chennai: 43279,
+        Bangalore: 43295,
+        Kolkata: 42809
       };
       console.log('Using fallback cities:', this.cities);
     }
@@ -410,7 +411,7 @@ class ClimateServer {
     // Fetch weather every 30 minutes
     this.weatherUpdateInterval = setInterval(async () => {
       console.log('Fetching latest weather updates...');
-      
+
       for (const city of this.cities) {
         try {
           await this.fetchAndBroadcastWeather(city);
@@ -427,11 +428,11 @@ class ClimateServer {
   private async fetchAndBroadcastWeather(city: string): Promise<void> {
     try {
       const weather = await this.climateAPI.getComprehensiveWeather(city, this.cityIds[city]);
-      
+
       // Process and validate weather data
       let primaryWeatherData: any;
       let dataSource: string = 'Unknown';
-      
+
       if (weather.openMeteoData?.data) {
         primaryWeatherData = weather.openMeteoData.data;
         dataSource = weather.openMeteoData.source || 'Open-Meteo';
@@ -439,7 +440,7 @@ class ClimateServer {
         primaryWeatherData = weather.openWeatherData.data;
         dataSource = weather.openWeatherData.source || 'OpenWeather';
       }
-      
+
       if (primaryWeatherData) {
         const weatherData: WeatherData = {
           city_name: city,
@@ -481,17 +482,17 @@ class ClimateServer {
 
         // Save to database
         this.climateDB.insertWeatherData(weatherData);
-        
+
         // Analyze for alerts
         this.alertService.analyzeWeatherData(weatherData);
-        
+
         // Broadcast to WebSocket subscribers
         this.io.to(`weather_${city}`).emit('weather_update', {
           city,
           data: weatherData,
           timestamp: new Date().toISOString()
         });
-        
+
         console.log(`✅ Weather updated for ${city}: ${weatherData.temperature}°C, ${weatherData.humidity}% humidity`);
       }
     } catch (error) {
@@ -505,7 +506,7 @@ class ClimateServer {
   public async start(): Promise<void> {
     try {
       await this.initializeServices();
-      
+
       this.server.listen(this.config.port, this.config.host, () => {
         console.log(`🚀 ClimateSync TypeScript Server running on ${this.config.host}:${this.config.port}`);
         console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -517,10 +518,10 @@ class ClimateServer {
 
       // Start weather updates
       this.startWeatherUpdates();
-      
+
       // Graceful shutdown handling
       this.setupGracefulShutdown();
-      
+
     } catch (error) {
       console.error('❌ Failed to start server:', error);
       process.exit(1);
@@ -533,16 +534,16 @@ class ClimateServer {
   private setupGracefulShutdown(): void {
     const shutdown = (signal: string) => {
       console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
-      
+
       // Stop weather updates
       if (this.weatherUpdateInterval) {
         clearInterval(this.weatherUpdateInterval);
       }
-      
+
       // Close server
       this.server.close(() => {
         console.log('✅ HTTP server closed');
-        
+
         // Close database connections
         try {
           this.climateDB.close();
@@ -550,11 +551,11 @@ class ClimateServer {
         } catch (error) {
           console.error('Error closing database:', error);
         }
-        
+
         console.log('✅ Graceful shutdown completed');
         process.exit(0);
       });
-      
+
       // Force exit after 30 seconds
       setTimeout(() => {
         console.error('❌ Force shutdown after timeout');
@@ -564,12 +565,12 @@ class ClimateServer {
 
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
-    
+
     process.on('uncaughtException', (error) => {
       console.error('❌ Uncaught Exception:', error);
       shutdown('uncaughtException');
     });
-    
+
     process.on('unhandledRejection', (reason, promise) => {
       console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
       shutdown('unhandledRejection');
