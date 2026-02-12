@@ -1,16 +1,24 @@
 const API_BASE_URL = "http://localhost:4002/api";
 
-export async function fetchCurrentWeather(city: string) {
+export async function fetchCurrentWeather(lat: number, lon: number) {
     try {
-        const response = await fetch(`${API_BASE_URL}/weather/current/${city}`, {
-            next: { revalidate: 60 }, // Revalidate every 60 seconds
-        });
+        const response = await fetch(`${API_BASE_URL}/weather/coordinates/${lat}/${lon}`);
         if (!response.ok) {
-            // Fallback for demo if server is not running
-            console.warn("API unavailable, returning mock data");
+            console.warn("API unavailable, returning null");
             return null;
         }
-        return await response.json();
+        const result = await response.json();
+        if (!result.success) return null;
+
+        // Transform the response to match the expected format
+        const weatherData = result.weather.current;
+        return {
+            temperature: weatherData.temperature,
+            humidity: weatherData.humidity,
+            wind_speed: weatherData.wind_speed,
+            precipitation: weatherData.precipitation,
+            weather_condition: weatherData.weather_category,
+        };
     } catch (error) {
         console.error("Failed to fetch weather:", error);
         return null;
@@ -32,7 +40,21 @@ export async function searchLocation(query: string) {
     try {
         const response = await fetch(`${API_BASE_URL}/weather/search/${encodeURIComponent(query)}`);
         if (!response.ok) return null;
-        return await response.json();
+        const result = await response.json();
+
+        if (!result.success || !result.results || result.results.length === 0) {
+            return null;
+        }
+
+        // Return the first result with coordinates
+        const firstResult = result.results[0];
+        return {
+            lat: firstResult.latitude,
+            lon: firstResult.longitude,
+            name: firstResult.name,
+            country: firstResult.country,
+            admin1: firstResult.admin1,
+        };
     } catch (error) {
         console.error("Failed to search location:", error);
         return null;
