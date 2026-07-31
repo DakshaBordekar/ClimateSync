@@ -1591,7 +1591,7 @@
         }
 
         function getCoastalMonitoring() {
-            document.getElementById('coastal-info').innerHTML = `
+document.getElementById('coastal-info').innerText = DOMPurify.sanitize(``);
                 <strong>Coastal Monitoring:</strong><br>
                 Storm surge: 1.2m<br>
                 Wave height: 4m<br>
