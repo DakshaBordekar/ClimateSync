@@ -503,7 +503,7 @@ class MLService {
             this.climateDB.db.exec(createTableSQL);
             
             // Create indexes for better performance
-            this.climateDB.db.exec(`
+this.climateDB.db.run(`
                 CREATE INDEX IF NOT EXISTS idx_ml_city_type 
                 ON ml_predictions(city_name, prediction_type)
             `);
